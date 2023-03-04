@@ -1,0 +1,26 @@
+{
+  "name": "websocket-serv-nodejs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "serv.js",
+  "scripts": {
+    "start": "pm2 start serv.js --watch",
+    "stop": "pm2 stop all --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexRax277/websocket-serv-nodejs.git"
+  },
+  "author": "AlexRax277",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlexRax277/websocket-serv-nodejs/issues"
+  },
+  "homepage": "https://github.com/AlexRax277/websocket-serv-nodejs#readme",
+  "devDependencies": {
+    "@koa/cors": "^4.0.0",
+    "koa": "^2.14.1",
+    "pm2": "^5.2.2",
+    "ws": "^8.12.1"
+  }
+}
