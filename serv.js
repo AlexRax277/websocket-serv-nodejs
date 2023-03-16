@@ -1,57 +1,69 @@
 const WS = require('ws');
-const http = require('http');
-const Koa = require('koa');
-const cors = require('@koa/cors');
 const path = require('path');
 const fs = require('fs');
 
 const port = 8080;
-const app = new Koa();
-const chat = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data.json')));
+const messages = JSON.parse(fs.readFileSync(path.resolve(__dirname, './messages.json')));
 const usersOnline = JSON.parse(fs.readFileSync(path.resolve(__dirname, './usersOnline.json')));
+let clientsOnline = [];
+let allUsers = [];
 
-app.use(cors());
 
-app.use(ctx => {
-    ctx.response.body = 'i\'m serv';
-});
-
-const server = http.createServer(app.callback());
-
-const wsServ = new WS.Server({
-    server
-});
+const wsServ = new WS.Server({ port: port });
 
 wsServ.on('connection', (ws) => {
+    wsServ.clients.forEach(client => {
+        if (client.readyState === WS.OPEN) {
+            clientsOnline.push(client);
+        } else{
+            clientsOnline.splice(client, 1);
+        };
+    });
+
+    setInterval(() => {
+        clientsOnline.forEach(client => { client.send(JSON.stringify( { 
+            "type": "currentUserList", 
+            "data": {
+                "usersOnline": usersOnline,
+                "messages": messages
+            } 
+        })) });
+    }, 1 * 1000);
+
     ws.on('message', e => {
         const inputData = JSON.parse(e);
-        if(inputData['type'] === 'userEnter') {
-            usersOnline.push(inputData['data']);
+        if(inputData['type'] === 'initialData') {
+            messages.forEach((message) => {
+                allUsers.push(message.user);
+            });
+            allUsers = [...allUsers, ...usersOnline];
+            clientsOnline.forEach(client => { client.send(JSON.stringify( { "type": "initialData", "data": allUsers })) });
+        }else if(inputData['type'] === 'userEnter') {
+            const currentUser = inputData['data'];
+            if(!usersOnline.includes(currentUser)) {
+                usersOnline.push(currentUser);
+            };
             fs.writeFileSync(path.resolve(__dirname, './usersOnline.json'), JSON.stringify(usersOnline));
-        } else if(inputData['type'] === 'newMsg') {
-            chat.forEach(e => {
-                if(e['id'] === inputData['data']['id']){
-                    return;
-                };
-            })
-            chat.push(inputData['data']);
-            fs.writeFileSync(path.resolve(__dirname, './data.json'), JSON.stringify(chat));
+        } else if(inputData['type'] === 'chatReq') {
+            clientsOnline.forEach(client => { client.send(JSON.stringify( { "type": "chatReq", "data": { "usersOnline": usersOnline, "messages": messages } })) });
         } else if(inputData['type'] === 'userOut') {
+            const userOut = inputData['data'];
             usersOnline.forEach((el) => {
-                if (el === inputData['data']) {
+                if (el === userOut) {
                     usersOnline.splice(usersOnline.indexOf(el), 1);
                 }
               });
             fs.writeFileSync(path.resolve(__dirname, './usersOnline.json'), JSON.stringify(usersOnline));
-        } else {
-            throw Error('incorrect typo of data')
+        } else if(inputData['type'] === 'newMsg') {
+            messages.forEach(e => {
+                if(e['id'] === inputData['data']['id']){
+                    return;
+                };
+            })
+            messages.push(inputData['data']);
+            fs.writeFileSync(path.resolve(__dirname, './messages.json'), JSON.stringify(messages));
+        }  else {
+            throw Error('incorrect type of data')
         };
-        
-
     });
-
-    ws.send(JSON.stringify({ "chat": chat, "usersOnline": usersOnline }));
-    
 })
-
-server.listen(port);
