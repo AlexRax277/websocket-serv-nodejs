@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/AlexRax277/websocket-serv-nodejs#readme",
   "devDependencies": {
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
     "pm2": "^5.2.2",
     "ws": "^8.12.1"
   }
