@@ -28,7 +28,7 @@ wsServ.on('connection', (ws) => {
                 "messages": messages
             } 
         })) });
-    }, 1 * 1000);
+    }, 2 * 1000);
 
     ws.on('message', e => {
         const inputData = JSON.parse(e);
