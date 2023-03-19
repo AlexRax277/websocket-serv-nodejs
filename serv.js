@@ -6,7 +6,6 @@ const port = 8080;
 const messages = JSON.parse(fs.readFileSync(path.resolve(__dirname, './messages.json')));
 const usersOnline = JSON.parse(fs.readFileSync(path.resolve(__dirname, './usersOnline.json')));
 let clientsOnline = [];
-let allUsers = [];
 
 
 const wsServ = new WS.Server({ port: port });
@@ -20,24 +19,19 @@ wsServ.on('connection', (ws) => {
         };
     });
 
-    setInterval(() => {
-        clientsOnline.forEach(client => { client.send(JSON.stringify( { 
-            "type": "currentUserList", 
-            "data": {
-                "usersOnline": usersOnline,
-                "messages": messages
-            } 
-        })) });
-    }, 2 * 1000);
+    
+    clientsOnline.forEach(client => { client.send(JSON.stringify( { 
+        "type": "currentUserList", 
+        "data": {
+            "usersOnline": usersOnline,
+            "messages": messages
+        } 
+    })) });
 
     ws.on('message', e => {
         const inputData = JSON.parse(e);
         if(inputData['type'] === 'initialData') {
-            messages.forEach((message) => {
-                allUsers.push(message.user);
-            });
-            allUsers = [...allUsers, ...usersOnline];
-            clientsOnline.forEach(client => { client.send(JSON.stringify( { "type": "initialData", "data": allUsers })) });
+            clientsOnline.forEach(client => { client.send(JSON.stringify( { "type": "initialData", "data": usersOnline })) });
         }else if(inputData['type'] === 'userEnter') {
             const currentUser = inputData['data'];
             if(!usersOnline.includes(currentUser)) {
@@ -66,4 +60,4 @@ wsServ.on('connection', (ws) => {
             throw Error('incorrect type of data')
         };
     });
-})
+});
